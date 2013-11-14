@@ -44,6 +44,8 @@
 #endif
 #endif
 
+#define DEBUG_PRINT 0
+
 struct usb_hub {
 	struct device		*intfdev;	/* the "interface" device */
 	struct usb_device	*hdev;
@@ -2610,7 +2612,9 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
  SuspendCleared:
 #if defined(CONFIG_LINK_DEVICE_HSIC) || defined(CONFIG_LINK_DEVICE_USB) \
 					|| defined(CONFIG_MDM_HSIC_PM)
+#if DEBUG_PRINT
 	pr_info("mif: %s: %d, %d\n", __func__, portstatus, portchange);
+#endif
 #endif
 	if (status == 0) {
 		if (hub_is_superspeed(hub->hdev)) {

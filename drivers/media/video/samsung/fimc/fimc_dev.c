@@ -41,6 +41,8 @@
 
 #include "fimc.h"
 
+#define DEBUG_PRINT 0
+
 char buf[32];
 struct fimc_global *fimc_dev;
 
@@ -2436,7 +2438,9 @@ int fimc_suspend(struct platform_device *pdev, pm_message_t state)
 	ctrl = get_fimc_ctrl(id);
 	pdata = to_fimc_plat(ctrl->dev);
 
+#if DEBUG_PRINT
 	printk(KERN_INFO "%s\n", __func__);
+#endif
 	if (ctrl->out)
 		fimc_suspend_out(ctrl);
 
@@ -2450,7 +2454,9 @@ int fimc_suspend(struct platform_device *pdev, pm_message_t state)
 		pdata->clk_off(pdev, &ctrl->clk);
 #endif
 
+#if DEBUG_PRINT
 	printk(KERN_INFO "%s--\n", __func__);
+#endif
 	return 0;
 }
 
@@ -2561,7 +2567,9 @@ int fimc_resume(struct platform_device *pdev)
 
 	ctrl = get_fimc_ctrl(id);
 	pdata = to_fimc_plat(ctrl->dev);
+#if DEBUG_PRINT
 	printk(KERN_INFO "%s", __func__);
+#endif
 	if (atomic_read(&ctrl->in_use) && pdata->clk_on)
 		pdata->clk_on(pdev, &ctrl->clk);
 
@@ -2573,7 +2581,9 @@ int fimc_resume(struct platform_device *pdev)
 	else
 		ctrl->status = FIMC_STREAMOFF;
 
+#if DEBUG_PRINT
 	printk(KERN_INFO "%s--", __func__);
+#endif
 	return 0;
 }
 

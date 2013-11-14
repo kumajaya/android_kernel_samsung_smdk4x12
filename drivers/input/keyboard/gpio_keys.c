@@ -728,8 +728,10 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 		}
 #endif
 
+#if 0
 		if (button->code == KEY_POWER)
 			printk(KERN_DEBUG"[keys]PWR %d\n", !!state);
+#endif
 	}
 }
 
