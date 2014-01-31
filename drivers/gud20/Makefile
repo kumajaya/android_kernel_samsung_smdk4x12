@@ -4,7 +4,7 @@
 ##################################
 #mobicore_security_team_add
 ##################################
-GUD_ROOT_FOLDER := drivers/gud20/
+GUD_ROOT_FOLDER := $(srctree)/drivers/gud20/
 ##################################
 # add our modules to kernel.
 ##################################
