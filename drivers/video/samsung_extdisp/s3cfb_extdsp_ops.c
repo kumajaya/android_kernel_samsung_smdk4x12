@@ -353,7 +353,7 @@ int s3cfb_extdsp_release(struct fb_info *fb, int user)
 	return 0;
 }
 
-inline unsigned int __chan_to_field_extdsp(unsigned int chan, struct fb_bitfield bf)
+unsigned int __chan_to_field_extdsp(unsigned int chan, struct fb_bitfield bf)
 {
 	chan &= 0xffff;
 	chan >>= 16 - bf.length;
