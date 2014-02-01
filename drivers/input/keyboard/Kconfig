@@ -578,6 +578,14 @@ config SENSORS_HALL
 	help
 	  Say Y here to enable the HALL.
 
+config SENSORS_HALL_WORKAROUND
+	tristate "HALL flip cover workaround"
+	depends on SENSORS_HALL
+	default y
+	help
+	  Say Y here to enable the flip cover detector for CM.
+	  Samsung stock ROM work with or without this config.
+
 config KEYBOARD_TC370L_TOUCHKEY
 	tristate "Coreriver touchkey support"
 	help

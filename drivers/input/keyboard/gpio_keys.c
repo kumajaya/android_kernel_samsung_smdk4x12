@@ -66,6 +66,11 @@ struct gpio_keys_drvdata {
 	/* WARNING: this area can be expanded. Do NOT add any member! */
 };
 
+#ifdef CONFIG_SENSORS_HALL_WORKAROUND
+int flip_cover_open;
+extern bool tsp_power_enabled;
+#endif
+
 /*
  * SYSFS interface for enabling/disabling keys and switches:
  *
@@ -348,13 +353,17 @@ static ssize_t key_pressed_show(struct device *dev,
 
 	for (i = 0; i < ddata->n_buttons; i++) {
 		struct gpio_button_data *bdata = &ddata->data[i];
+#ifndef CONFIG_SENSORS_HALL_WORKAROUND
 		if (bdata->button->code != SW_FLIP) {
+#endif
 			keystate |= bdata->key_state;
 #if defined(CONFIG_MACH_IPCAM)
 			if (bdata->button->code == KEY_POWER)
 				keystate |= !gpio_get_value(GPIO_RESET_KEY);
 #endif
+#ifndef CONFIG_SENSORS_HALL_WORKAROUND
 		}
+#endif
 	}
 
 	if (keystate)
@@ -402,6 +411,7 @@ static ssize_t hall_detect_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct gpio_keys_drvdata *ddata = dev_get_drvdata(dev);
+#ifndef CONFIG_SENSORS_HALL_WORKAROUND
 	int i = 0;
 	int keystate = 0;
 
@@ -412,6 +422,9 @@ static ssize_t hall_detect_show(struct device *dev,
 	}
 
 	if (keystate)
+#else
+	if (ddata->flip_cover)
+#endif
 		sprintf(buf, "OPEN");
 	else
 		sprintf(buf, "CLOSE");
@@ -703,8 +716,17 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 		}
 
 #endif
+#ifdef CONFIG_SENSORS_HALL_WORKAROUND
+		if (!flip_cover_open && button->code == KEY_POWER) {
+			/* printk(KERN_DEBUG"[FLIP_COVER] Cover closed, ignore KEY_POWER\n"); */
+		}
+		else { 
+#endif
 		input_event(input, type, button->code, !!state);
 		input_sync(input);
+#ifdef CONFIG_SENSORS_HALL_WORKAROUND
+		}
+#endif
 
 		if (button->code == KEY_POWER)
 			printk(KERN_DEBUG"[keys]PWR %d\n", !!state);
@@ -825,6 +847,41 @@ fail2:
 }
 
 
+#ifdef CONFIG_SENSORS_HALL_WORKAROUND
+static void flip_cover_work(struct work_struct *work)
+{
+	struct gpio_keys_drvdata *ddata =
+		container_of(work, struct gpio_keys_drvdata,
+				flip_cover_dwork.work);
+
+	ddata->flip_cover = gpio_get_value(ddata->gpio_flip_cover);
+
+	flip_cover_open = ddata->flip_cover;
+
+	if (!tsp_power_enabled && !flip_cover_open) {
+		/* printk("[FLIP_COVER] Screen already off\n"); */
+	} else if (tsp_power_enabled && flip_cover_open) {
+		/* printk("[FLIP_COVER] Screen already on\n"); */
+	} else {
+		/* printk("[FLIP_COVER] About to trigger KEY_POWER event\n"); */
+		input_report_key(ddata->input, KEY_POWER, 1);
+		input_sync(ddata->input);
+		input_report_key(ddata->input, KEY_POWER, 0);
+		input_sync(ddata->input);
+	}
+}
+
+static irqreturn_t flip_cover_detect(int irq, void *dev_id)
+{
+	struct gpio_keys_drvdata *ddata = dev_id;
+
+	cancel_delayed_work_sync(&ddata->flip_cover_dwork);
+	schedule_delayed_work(&ddata->flip_cover_dwork, HZ / 20);
+	return IRQ_HANDLED;
+}
+#endif
+
+
 #ifdef CONFIG_MACH_GC1
 static void strobe_insert_work(struct work_struct *work)
 {
@@ -854,6 +911,39 @@ static irqreturn_t strobe_pen_detect(int irq, void *dev_id)
 static int gpio_keys_open(struct input_dev *input)
 {
 	struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
+
+#ifdef CONFIG_SENSORS_HALL_WORKAROUND
+	int ret = 0;
+	int irq = gpio_to_irq(ddata->gpio_flip_cover);
+
+	INIT_DELAYED_WORK(&ddata->flip_cover_dwork, flip_cover_work);
+
+	ret = request_threaded_irq(
+		irq, NULL,
+		flip_cover_detect,
+		IRQF_DISABLED | IRQF_TRIGGER_RISING |
+		IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+		"flip_cover", ddata);
+
+	if (ret) {
+		printk(KERN_ERR
+			"keys: failed to request flip cover irq %d gpio %d\n",
+			irq, ddata->gpio_flip_cover);
+		goto hall_sensor_error;
+	}
+
+	ret = enable_irq_wake(irq);
+	if (ret < 0) {
+		printk(KERN_ERR
+			"keys: Failed to Enable Wakeup Source(%d) \n", ret);
+		goto hall_sensor_error;
+	}
+
+	/* update the current status */
+	schedule_delayed_work(&ddata->flip_cover_dwork, HZ / 2);
+
+hall_sensor_error:
+#endif
 
 #ifdef CONFIG_MACH_GC1
 	int ret = 0;
@@ -911,6 +1001,9 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 	ddata->n_buttons = pdata->nbuttons;
 	ddata->enable = pdata->enable;
 	ddata->disable = pdata->disable;
+#ifdef CONFIG_SENSORS_HALL_WORKAROUND
+	ddata->gpio_flip_cover = pdata->gpio_flip_cover;
+#endif
 #ifdef CONFIG_MACH_GC1
 	ddata->gpio_strobe_insert = pdata->gpio_strobe_insert;
 #endif
