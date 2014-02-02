@@ -819,7 +819,13 @@ static struct samsung_battery_platform_data samsung_battery_pdata = {
 
 	.cb_det_src = CABLE_DET_CHARGER,
 
-#if defined(CONFIG_MACH_KONA_KOR_WIFI)
+#if defined(CONFIG_MACH_KONA_USA_WIFI)
+	/* temperature param */
+	.overheat_stop_temp = 500,
+	.overheat_recovery_temp = 460,
+	.freeze_stop_temp = -50,
+	.freeze_recovery_temp = 0,
+#elif defined(CONFIG_MACH_KONA_KOR_WIFI)
 	/* temperature param */
 	.overheat_stop_temp = 585,
 	.overheat_recovery_temp = 430,

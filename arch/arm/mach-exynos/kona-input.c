@@ -19,6 +19,11 @@
 
 static u32 hw_rev;
 
+#ifdef CONFIG_SENSORS_HALL_WORKAROUND
+bool tsp_power_enabled;
+EXPORT_SYMBOL(tsp_power_enabled);
+#endif
+
 #if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_S7301)
 #include <linux/synaptics_s7301.h>
 static bool have_tsp_ldo;
@@ -43,6 +48,10 @@ static int synaptics_ts_set_power(bool en)
 	if (!have_tsp_ldo)
 		return -1;
 	printk(KERN_DEBUG "[TSP] %s(%d)\n", __func__, en);
+
+#ifdef CONFIG_SENSORS_HALL_WORKAROUND
+	tsp_power_enabled = en;
+#endif
 
 	regulator = regulator_get(NULL, "tsp_3.3v");
 	if (IS_ERR(regulator))
@@ -380,6 +389,7 @@ struct gpio_keys_button kona_buttons[] = {
 		  1, 1, sec_debug_check_crash_key),
 	GPIO_KEYS(KEY_HOMEPAGE, GPIO_OK_KEY_ANDROID,
 		  1, 1, sec_debug_check_crash_key),
+#ifndef CONFIG_SENSORS_HALL_WORKAROUND
 	{
 		.code = SW_FLIP,
 		.gpio = GPIO_HALL_SENSOR_INT,
@@ -390,11 +400,15 @@ struct gpio_keys_button kona_buttons[] = {
 		.value = 1,
 		.isr_hook = sec_debug_check_crash_key,
 	},
+#endif
 };
 
 struct gpio_keys_platform_data kona_gpiokeys_platform_data = {
 	kona_buttons,
 	ARRAY_SIZE(kona_buttons),
+#ifdef CONFIG_SENSORS_HALL_WORKAROUND
+	.gpio_flip_cover = GPIO_HALL_SENSOR_INT,
+#endif
 };
 
 static struct platform_device kona_keypad = {
@@ -407,9 +421,20 @@ static struct platform_device kona_keypad = {
 void __init kona_key_init(void)
 {
 #if defined(CONFIG_KEYBOARD_GPIO)
+	int err;
 	platform_device_register(&kona_keypad);
+#ifdef CONFIG_SENSORS_HALL_WORKAROUND
+	err = gpio_request(GPIO_HALL_SENSOR_INT, "GPIO_HALL_SENSOR_INT");
+
+	if (err)
+		printk(KERN_DEBUG "%s gpio_request error\n", __func__);
+	else {
+		s3c_gpio_setpull(GPIO_HALL_SENSOR_INT, S3C_GPIO_PULL_DOWN);
+		s5p_register_gpio_interrupt(GPIO_HALL_SENSOR_INT);
+		gpio_direction_input(GPIO_HALL_SENSOR_INT);
+		s3c_gpio_cfgpin(GPIO_HALL_SENSOR_INT, S3C_GPIO_SFN(0xF)); /* EINT */
+		gpio_free(GPIO_HALL_SENSOR_INT);
+	}
 #endif
-
-
-
+#endif
 }

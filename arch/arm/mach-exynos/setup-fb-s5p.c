@@ -652,7 +652,26 @@ int s3cfb_mdnie_pwm_clk_on(void)
 		printk(KERN_ERR "failed to get sclk for mdnie_pwm_pre\n");
 		goto err_clk2;
 	}
-#if defined(CONFIG_FB_S5P_S6C1372) || defined(CONFIG_FB_S5P_HX8369B)
+#if defined(CONFIG_FB_S5P_S6C1372) \
+  || defined(CONFIG_FB_S5P_HX8369B) \
+  || defined(CONFIG_BACKLIGHT_LP855X)
+
+#if defined(CONFIG_MACH_KONA)
+	if (soc_is_exynos4210())
+		mout_mpll = clk_get(NULL, "mout_mpll");
+	else
+		mout_mpll = clk_get(NULL, "mout_mpll_user");
+
+	if (IS_ERR(mout_mpll)) {
+		printk(KERN_ERR "failed to get mout_mpll\n");
+		goto err_clk3;
+	}
+
+	clk_set_parent(sclk, mout_mpll);
+
+	rate = 57500000;
+	clk_set_rate(sclk, rate);
+#else
 	mout_mpll = clk_get(NULL, "xusbxti");
 	if (IS_ERR(mout_mpll)) {
 		printk(KERN_ERR "failed to get mout_mpll\n");
@@ -669,6 +688,7 @@ int s3cfb_mdnie_pwm_clk_on(void)
 	if (!rate)
 		rate = 22000000;
 	clk_set_rate(sclk_pre, rate);
+#endif
 #elif defined(CONFIG_FB_S5P_S6F1202A)
 	if (soc_is_exynos4210())
 		mout_mpll = clk_get(NULL, "mout_mpll");

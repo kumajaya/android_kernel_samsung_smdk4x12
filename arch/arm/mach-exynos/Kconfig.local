@@ -325,6 +325,9 @@ config MACH_KONALTE_USA_ATT
 
 config MACH_KONA_KOR_WIFI
 	bool "KONA Note8 KOR ANY"
+
+config MACH_KONA_USA_WIFI
+	bool "KONA Note8 USA WIFI"
 endchoice
 
 menu "M0 CTC based models"

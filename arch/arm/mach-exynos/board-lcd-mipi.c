@@ -79,6 +79,12 @@
  #define DPHY_PLL_P	3
  #define DPHY_PLL_M	123
  #define DPHY_PLL_S	1
+#elif defined(CONFIG_FB_S5P_NT71391)
+ #define DSIM_NO_DATA_LANE	DSIM_DATA_LANE_4
+ /* 230Mbps */
+ #define DPHY_PLL_P	3
+ #define DPHY_PLL_M	115
+ #define DPHY_PLL_S	1
 #else
  #define DSIM_NO_DATA_LANE	DSIM_DATA_LANE_4
  /* 500Mbps */
@@ -880,6 +886,40 @@ struct platform_device mdnie_device = {
 #endif
 
 #ifdef CONFIG_BACKLIGHT_LP855X
+#if defined(CONFIG_MACH_KONA)
+#define EPROM_CFG5_ADDR 0xA5
+#define EPROM_A5_VAL    0xA0 /* PWM_DIRECT(7)=1, PS_MODE(6:4)=4drivers*/
+#define EPROM_A5_MASK   0x0F /* PWM_FREQ(3:0) : mask */
+
+static struct lp855x_rom_data lp8556_eprom_arr[] = {
+    {EPROM_CFG5_ADDR, EPROM_A5_VAL, EPROM_A5_MASK},
+};
+
+static struct lp855x_platform_data lp8856_bl_pdata = {
+    .mode       = PWM_BASED,
+    .device_control = PWM_CONFIG(LP8556),
+    .load_new_rom_data = 1,
+    .size_program   = ARRAY_SIZE(lp8556_eprom_arr),
+    .rom_data   = lp8556_eprom_arr,
+    .use_gpio_en    = 1,
+    .gpio_en    = GPIO_LED_BACKLIGHT_RESET,
+    .power_on_udelay = 1000,
+};
+
+static struct i2c_board_info i2c_devs24_emul[] __initdata = {
+    {
+        I2C_BOARD_INFO("lp8556", (0x58 >> 1)),
+        .platform_data  = &lp8856_bl_pdata,
+    },
+};
+static int lcd_bl_init(void)
+{
+    i2c_register_board_info(24, i2c_devs24_emul,
+        ARRAY_SIZE(i2c_devs24_emul));
+
+    return 0;
+}
+#else
 #define EPROM_CFG3_ADDR		0xA3
 #define EPROM_CFG5_ADDR		0xA5
 #define EPROM_CFG7_ADDR		0xA7
@@ -949,6 +989,7 @@ static int lcd_bl_init(void)
 
 	return 0;
 }
+#endif
 #endif
 
 #if defined(CONFIG_LCD_FREQ_SWITCH)

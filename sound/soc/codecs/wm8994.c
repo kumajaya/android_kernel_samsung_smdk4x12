@@ -3594,9 +3594,21 @@ static irqreturn_t wm1811_jackdet_irq(int irq, void *data)
 		mutex_lock(&codec->mutex);
 
 		if (present)
+#if defined(CONFIG_MACH_KONA_EUR_LTE) || defined(CONFIG_MACH_KONALTE_USA_ATT)
+			if(system_rev > 7)
+			snd_soc_dapm_force_enable_pin(&codec->dapm,
+							"Headset ext Mic");
+			else
+#endif
 			snd_soc_dapm_force_enable_pin(&codec->dapm,
 						      "MICBIAS2");
 		else
+#if defined(CONFIG_MACH_KONA_EUR_LTE) || defined(CONFIG_MACH_KONALTE_USA_ATT)
+			if(system_rev > 7)
+			snd_soc_dapm_disable_pin(&codec->dapm, 
+							"Headset ext Mic");
+			else
+#endif
 			snd_soc_dapm_disable_pin(&codec->dapm, "MICBIAS2");
 
 		snd_soc_dapm_sync(&codec->dapm);

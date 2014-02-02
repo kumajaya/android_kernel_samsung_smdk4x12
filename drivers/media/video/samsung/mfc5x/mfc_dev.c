@@ -278,7 +278,12 @@ static int mfc_open(struct inode *inode, struct file *file)
 		}
 
 #if defined(CONFIG_BUSFREQ_OPP) || defined(CONFIG_BUSFREQ_LOCK_WRAPPER)
+#if defined(CONFIG_MACH_KONA)
+		dev_lock(mfcdev->bus_dev, mfcdev->device, 267160);
+		printk(KERN_INFO "MFC BusFreq min lock is set by 267160\n");
+#else
 		dev_lock(mfcdev->bus_dev, mfcdev->device, 133133);
+#endif
 #endif
 #ifdef CONFIG_BUSFREQ
 		pm_qos_add_request(&bus_qos_pm_qos_req, PM_QOS_BUS_QOS, 1);
