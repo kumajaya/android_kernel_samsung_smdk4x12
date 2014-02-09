@@ -20,6 +20,11 @@
 #define sr130pc20_readb(sd, addr, data) sr130pc20_i2c_read(sd, addr, data)
 #define sr130pc20_writeb(sd, addr, data) sr130pc20_i2c_write(sd, addr, data)
 
+#if defined(CONFIG_MACH_KONA) || defined(CONFIG_MACH_TAB3)
+int fimc_is;
+EXPORT(fimc_is);
+#endif
+
 static int dbg_level;
 
 static const struct sr130pc20_fps sr130pc20_framerates[] = {
@@ -1759,6 +1764,9 @@ static int sr130pc20_init(struct v4l2_subdev *sd, u32 val)
 	CHECK_ERR_MSG(err, "failed to initialize camera device\n");
 	sr130pc20_init_parameter(sd);
 	state->initialized = 1;
+#if defined(CONFIG_MACH_KONA) || defined(CONFIG_MACH_TAB3)
+	fimc_is = 1;
+#endif
 
 	return 0;
 }
@@ -1913,6 +1921,9 @@ static int sr130pc20_remove(struct i2c_client *client)
 	v4l2_device_unregister_subdev(sd);
 	mutex_destroy(&state->ctrl_lock);
 	kfree(state);
+#if defined(CONFIG_MACH_KONA) || defined(CONFIG_MACH_TAB3)
+	fimc_is = 0;
+#endif
 
 	printk(KERN_DEBUG "%s %s: driver removed!!\n",
 		dev_driver_string(&client->dev), dev_name(&client->dev));

@@ -32,6 +32,10 @@
 
 #include "fimc.h"
 
+#if defined(CONFIG_MACH_KONA) || defined(CONFIG_MACH_TAB3)
+extern int fimc_is;
+#endif
+
 static struct pm_qos_request_list bus_qos_pm_qos_req;
 
 static const struct v4l2_fmtdesc capture_fmts[] = {
@@ -1414,7 +1418,7 @@ int fimc_s_fmt_vid_private(struct file *file, void *fh, struct v4l2_format *f)
 		mbus_fmt = &ctrl->cap->mbus_fmt;
 		mbus_fmt->width = pix->width;
 		mbus_fmt->height = pix->height;
-#if defined(CONFIG_MACH_P4NOTE) || defined(CONFIG_MACH_SP7160LTE) || defined(CONFIG_MACH_KONA) || defined(CONFIG_MACH_TAB3) || defined(CONFIG_MACH_ZEST)
+#if defined(CONFIG_MACH_P4NOTE) || defined(CONFIG_MACH_SP7160LTE) || defined(CONFIG_MACH_ZEST)
 /* Unfortuntely, we have to use pix->field (not pix->priv) since
  * pix.field is already used in the below else condtion statement
  * (in case that sub-devices are not registered)
@@ -1423,6 +1427,9 @@ int fimc_s_fmt_vid_private(struct file *file, void *fh, struct v4l2_format *f)
 #endif
 #if defined(CONFIG_MACH_GC1) || defined(CONFIG_MACH_GD2) || defined(CONFIG_MACH_GC2PD)
 		mbus_fmt->field = pix->priv;
+#endif
+#if defined(CONFIG_MACH_KONA) || defined(CONFIG_MACH_TAB3)
+		if (!fimc_is) mbus_fmt->field = pix->field;
 #endif
 		printk(KERN_INFO "%s mbus_fmt->width = %d, height = %d,\n",
 			__func__,mbus_fmt->width ,mbus_fmt->height);
