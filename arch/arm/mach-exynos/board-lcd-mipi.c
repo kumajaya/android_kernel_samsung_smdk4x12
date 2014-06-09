@@ -192,7 +192,11 @@ static struct s3cfb_lcd lcd_panel_pdata = {
 
 	.freq = 60,
 #if defined(CONFIG_S6E8AA0_AMS480GYXX) || defined(CONFIG_S6E8AA0_AMS465XX)
+#if defined(CONFIG_MACH_M3_JPN_DCM)
+	.freq_limit = 43,
+#else
 	.freq_limit = 40,
+#endif
 #endif
 
 	/* minumun value is 0 except for wr_act time. */
@@ -202,7 +206,20 @@ static struct s3cfb_lcd lcd_panel_pdata = {
 		.wr_act = 1,
 		.wr_hold = 0,
 	},
-
+#if defined(CONFIG_MACH_M3_JPN_DCM)
+	.timing = {
+		.h_fp = 15,
+		.h_bp = 10,
+		.h_sw = 10,
+		.v_fp = 13,
+		.v_fpe = 1,
+		.v_bp = 1,
+		.v_bpe = 1,
+		.v_sw = 2,
+		.cmd_allow_len = 11,
+		.stable_vfp = 2,
+	},
+#else
 	.timing = {
 		.h_fp = 5,
 		.h_bp = 5,
@@ -215,7 +232,7 @@ static struct s3cfb_lcd lcd_panel_pdata = {
 		.cmd_allow_len = 11,
 		.stable_vfp = 2,
 	},
-
+#endif
 	.polarity = {
 		.rise_vclk = 1,
 		.inv_hsync = 0,
@@ -756,6 +773,11 @@ static int lcd_power_on(void *ld, int enable)
 			regulator_put(regulator);
 		}
 	} else {
+#if defined(CONFIG_MACH_SF2)
+#if defined(GPIO_MLCD_RST)
+		gpio_set_value(GPIO_MLCD_RST, GPIO_LEVEL_LOW);
+#endif
+#endif
 		for (i = ARRAY_SIZE(lcd_regulator_arr)-1; i >= 0; i--) {
 			pr_debug("%s: regulator name : %s, enable : %d\n",
 				 __func__, lcd_regulator_arr[i], enable);
@@ -769,8 +791,10 @@ static int lcd_power_on(void *ld, int enable)
 #if defined(GPIO_LCD_POWER_EN)
 		gpio_set_value(GPIO_LCD_POWER_EN, GPIO_LEVEL_LOW);
 #endif
+#if !defined(CONFIG_MACH_SF2)
 #if defined(GPIO_MLCD_RST)
 		gpio_set_value(GPIO_MLCD_RST, GPIO_LEVEL_LOW);
+#endif
 #endif
 	}
 #if defined(CONFIG_FB_S5P_LMS501XX)

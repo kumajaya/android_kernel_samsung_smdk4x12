@@ -204,7 +204,7 @@ static void kona_gpio_init(void)
 	gpio_free(GPIO_LINEOUT_EN);
 #endif
 
-#if defined(CONFIG_MACH_KONA_EUR_LTE) || defined(CONFIG_MACH_KONALTE_USA_ATT)
+#if defined(CONFIG_SND_USE_EXTERNAL_LDO_FOR_EARMICBIAS)
 	err = gpio_request(GPIO_EAR_SND_SEL, "EAR_SND_SEL");
 	if (err) {
 		pr_err(KERN_ERR "EAR_SND_SEL GPIO set error!\n");
@@ -447,7 +447,7 @@ static int set_ext_submicbias(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
-#if defined(CONFIG_MACH_KONA_EUR_LTE) || defined(CONFIG_MACH_KONALTE_USA_ATT)
+#if defined(CONFIG_SND_USE_EXTERNAL_LDO_FOR_EARMICBIAS)
 static int set_ext_earmicbias(struct snd_soc_dapm_widget *w,
 				struct snd_kcontrol *kcontrol, int event)
 {
@@ -667,14 +667,13 @@ static void jack_set_type(struct wm1811_machine_priv *wm1811, int jack_type)
 
 			if (wm8994->pdata->jd_ext_cap) {
 				mutex_lock(&wm1811->codec->mutex);
-#if defined(CONFIG_MACH_KONA_EUR_LTE) || defined(CONFIG_MACH_KONALTE_USA_ATT)
-				if (system_rev > 7)
+#if defined(CONFIG_SND_USE_EXTERNAL_LDO_FOR_EARMICBIAS)
 				snd_soc_dapm_disable_pin(&wm1811->codec->dapm,
 							"Headset ext Mic");
-				else
-#endif
+#else
 				snd_soc_dapm_disable_pin(&wm1811->codec->dapm,
 							 "MICBIAS2");
+#endif							 
 				snd_soc_dapm_sync(&wm1811->codec->dapm);
 				mutex_unlock(&wm1811->codec->mutex);
 			}
@@ -943,7 +942,7 @@ static const struct snd_kcontrol_new kona_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Main Mic"),
 	SOC_DAPM_PIN_SWITCH("Sub Mic"),
 	SOC_DAPM_PIN_SWITCH("Headset Mic"),
-#if defined(CONFIG_MACH_KONA_EUR_LTE) || defined(CONFIG_MACH_KONALTE_USA_ATT)
+#if defined(CONFIG_SND_USE_EXTERNAL_LDO_FOR_EARMICBIAS)
 	SOC_DAPM_PIN_SWITCH("Headset ext Mic"),
 #endif
 
@@ -974,7 +973,7 @@ const struct snd_soc_dapm_widget kona_dapm_widgets[] = {
 	SND_SOC_DAPM_LINE("LINE", set_lineout_switch),
 	SND_SOC_DAPM_LINE("HDMI", NULL),
 
-#if defined(CONFIG_MACH_KONA_EUR_LTE) || defined(CONFIG_MACH_KONALTE_USA_ATT)
+#if defined(CONFIG_SND_USE_EXTERNAL_LDO_FOR_EARMICBIAS)
 	SND_SOC_DAPM_MIC("Headset ext Mic", set_ext_earmicbias),
 #endif
 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
@@ -1009,7 +1008,7 @@ const struct snd_soc_dapm_route kona_dapm_routes[] = {
 	{ "IN1RP", NULL, "MICBIAS2" },
 	{ "IN1RN", NULL, "MICBIAS2" },
 	{ "MICBIAS2", NULL, "Headset Mic" },
-#if defined(CONFIG_MACH_KONA_EUR_LTE) || defined(CONFIG_MACH_KONALTE_USA_ATT)
+#if defined(CONFIG_SND_USE_EXTERNAL_LDO_FOR_EARMICBIAS)
 	{ "MICBIAS2", NULL, "Headset ext Mic" },
 #endif
 };
@@ -1200,7 +1199,7 @@ static int kona_wm1811_init_paiftx(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_ignore_suspend(&codec->dapm, "SPK");
 	snd_soc_dapm_ignore_suspend(&codec->dapm, "HP");
 	snd_soc_dapm_ignore_suspend(&codec->dapm, "Headset Mic");
-#if defined(CONFIG_MACH_KONA_EUR_LTE) || defined(CONFIG_MACH_KONALTE_USA_ATT)
+#if defined(CONFIG_SND_USE_EXTERNAL_LDO_FOR_EARMICBIAS)
 	snd_soc_dapm_ignore_suspend(&codec->dapm, "Headset ext Mic");
 #endif
 	snd_soc_dapm_ignore_suspend(&codec->dapm, "Sub Mic");

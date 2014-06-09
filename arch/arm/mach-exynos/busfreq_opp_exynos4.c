@@ -591,6 +591,7 @@ void exynos_request_apply(unsigned long freq)
 
 	if (opp_get_freq(bus_ctrl.data->curr_opp) >= opp_get_freq(opp))
 		goto out;
+
 #ifdef CONFIG_CPU_EXYNOS4212
 	index = _target(bus_ctrl.data, opp, 0);
 #else
