@@ -819,7 +819,15 @@ void __init tab3_tsp_init(u32 system_rev)
 
 	panel = get_panel_version();
 	printk(KERN_INFO "TSP ID : %d\n", panel);
+#if defined(CONFIG_TARGET_TAB3_WIFI8)
 	if (system_rev < 3) {
+#elif defined(CONFIG_TARGET_TAB3_3G8)
+	if (system_rev < 4) {
+#elif defined(CONFIG_TARGET_TAB3_LTE8)
+	if (system_rev < 5) {
+#else
+	if (system_rev < 3) {
+#endif
 		if (panel == 1) /* yongfast */
 			mms_ts_pdata.panel = 0x8;
 		else if (panel == 2) /* wintec */

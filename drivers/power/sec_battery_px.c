@@ -1565,6 +1565,8 @@ static struct device_attribute sec_battery_attrs[] = {
 	SEC_BATTERY_ATTR(batt_current_now),
 	SEC_BATTERY_ATTR(siop_activated),
 	SEC_BATTERY_ATTR(batt_read_raw_soc),
+	SEC_BATTERY_ATTR(batt_current_ua_now),
+	SEC_BATTERY_ATTR(batt_current_ua_avg),
 #ifdef CONFIG_SAMSUNG_LPM_MODE
 	SEC_BATTERY_ATTR(batt_lp_charging),
 	SEC_BATTERY_ATTR(voltage_now),
@@ -1612,6 +1614,8 @@ enum {
 	BATT_CURRENT_NOW,
 	SIOP_ACTIVATED,
 	BATT_READ_RAW_SOC,
+	BATT_CURRENT_UA_NOW,
+	BATT_CURRENT_UA_AVG,
 #ifdef CONFIG_SAMSUNG_LPM_MODE
 	BATT_LP_CHARGING,
 	VOLTAGE_NOW,
@@ -1729,6 +1733,14 @@ static ssize_t sec_bat_show_property(struct device *dev,
 	case BATT_READ_RAW_SOC:
 		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
 		get_fuelgauge_value(FG_RAW_LEVEL));
+		break;
+	case BATT_CURRENT_UA_NOW:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+		get_fuelgauge_value(FG_CURRENT)*1000);
+		break;
+	case BATT_CURRENT_UA_AVG:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+		get_fuelgauge_value(FG_CURRENT_AVG)*1000);
 		break;
 #ifdef CONFIG_SAMSUNG_LPM_MODE
 	case BATT_LP_CHARGING:

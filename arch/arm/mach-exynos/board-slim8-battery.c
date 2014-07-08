@@ -75,6 +75,7 @@ static sec_charging_current_t charging_current_table[] = {
         {500,   500,    250,    40*60},     	/* POWER_SUPPLY_TYPE_WIRELESS */
         {1800,  1800,   250,    40*60},     	/* POWER_SUPPLY_TYPE_UARTOFF */
 	{500,   500,    250,    40*60},		/* POWER_SUPPLY_TYPE_OTG */
+	{0,     0,      0,      0},             /* POWER_SUPPLY_TYPE_POWER_SHARING */
 };
 
 static bool sec_bat_gpio_init(void) 	{ return true; }
@@ -128,9 +129,15 @@ static void sec_bat_initial_check(void)
 	union power_supply_propval value;
 
         if (POWER_SUPPLY_TYPE_BATTERY < current_cable_type) {
-                value.intval = current_cable_type<<ONLINE_TYPE_MAIN_SHIFT;
-                psy_do_property("battery", set,
-                        POWER_SUPPLY_PROP_ONLINE, value);
+		if (current_cable_type == POWER_SUPPLY_TYPE_POWER_SHARING) {
+			value.intval = current_cable_type;
+			psy_do_property("ps", set,
+					POWER_SUPPLY_PROP_ONLINE, value);
+		} else {
+			value.intval = current_cable_type<<ONLINE_TYPE_MAIN_SHIFT;
+			psy_do_property("battery", set,
+					POWER_SUPPLY_PROP_ONLINE, value);
+		}
         } else {
                 psy_do_property("sec-charger", get,
                                 POWER_SUPPLY_PROP_ONLINE, value);
@@ -501,6 +508,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.capacity_max_margin = 30,
 
 	/* Charger */
+	.charger_name = "sec-charger",
 	.chg_polarity_en = 0,   /* active LOW charge enable */
 	.chg_polarity_status = 0,
 	.chg_irq_attr = IRQF_TRIGGER_RISING,

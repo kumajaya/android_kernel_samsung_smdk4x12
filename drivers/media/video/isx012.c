@@ -2668,9 +2668,13 @@ static int isx012_control_stream(struct v4l2_subdev *sd, u32 cmd)
 		state->capture.lowlux_night = 0;
 
 		/* We turn flash off if one-shot flash is still on. */
-		if (isx012_is_hwflash_on(sd))
-			isx012_flash_oneshot(sd, ISX012_FLASH_OFF);
-		else
+		if (isx012_is_hwflash_on(sd)) {
+			if (state->flash.mode == FLASH_MODE_TORCH) {
+				isx012_flash_torch(sd, ISX012_FLASH_OFF);
+			} else {
+				isx012_flash_oneshot(sd, ISX012_FLASH_OFF);
+			}
+		} else
 			state->flash.on = 0;
 
 		if (state->flash.preflash == PREFLASH_ON)
@@ -2719,8 +2723,10 @@ static int isx012_set_flash_mode(struct v4l2_subdev *sd, s32 val)
 		return 0;
 	}
 
-	if (val == FLASH_MODE_TORCH)
-		isx012_flash_torch(sd, ISX012_FLASH_ON);
+	if (val == FLASH_MODE_TORCH) {
+		if(state->runmode == RUNMODE_INIT) return 0; //prevent turn on flash before initiated
+			isx012_flash_torch(sd, ISX012_FLASH_ON);
+	}
 
 	if ((state->flash.mode == FLASH_MODE_TORCH)
 	    && (val == FLASH_MODE_OFF))
@@ -2857,26 +2863,32 @@ static inline void isx012_get_exif_flash(struct v4l2_subdev *sd,
 
 	*flash = 0;
 
-	switch (state->flash.mode) {
-	case FLASH_MODE_OFF:
-		*flash |= EXIF_FLASH_MODE_SUPPRESSION;
-		break;
+	if (state->flash.support)
+	{
+		switch (state->flash.mode)
+		{
+		case FLASH_MODE_OFF:
+			*flash |= EXIF_FLASH_MODE_SUPPRESSION;
+			 break;
 
-	case FLASH_MODE_AUTO:
-		*flash |= EXIF_FLASH_MODE_AUTO;
-		break;
+		case FLASH_MODE_AUTO:
+			*flash |= EXIF_FLASH_MODE_AUTO;
+			 break;
 
-	case FLASH_MODE_ON:
-	case FLASH_MODE_TORCH:
-		*flash |= EXIF_FLASH_MODE_FIRING;
-		break;
+		case FLASH_MODE_ON:
+		case FLASH_MODE_TORCH:
+			*flash |= EXIF_FLASH_MODE_FIRING;
+			 break;
 
-	default:
-		break;
-	}
+		default:
+			break;
+		}
 
-	if (state->flash.on)
-		*flash |= EXIF_FLASH_FIRED;
+		if(state->flash.on)
+			*flash |= EXIF_FLASH_FIRED;
+
+	} else
+		*flash = EXIF_NO_FLASH ;
 }
 
 /* PX: */
@@ -3743,11 +3755,12 @@ static int isx012_check_vendorid(struct v4l2_subdev *sd)
 	u32 status = 0;
 	u32 temp = 0, temp_msb = 0, temp_lsb = 0;
 	
-	if (vendor_id != UNINITIALIZED_VENDORID)
+	if (vendor_id && (vendor_id != UNINITIALIZED_VENDORID))
 		return 0;
 
 	/* Read OTP version */
 	err = isx012_readw(sd, 0x004F, &status);
+	CHECK_ERR(err);
 	cam_dbg("OTP : 0x004F read 0x%04X\n", status);
 	if ((status & 0x10) == 0x10) {
 		err = isx012_readw(sd, 0x0051, &status);
@@ -3776,17 +3789,19 @@ static int isx012_post_poweron(struct v4l2_subdev *sd)
 	/* It's assumed that Mclk is already enabled */
 	cam_trace("E\n");
 
+	msleep_debug(10, false);
+
+#if CONFIG_CAM_DEBUG
 	err = isx012_check_i2c(sd, 0x1234);
 	CHECK_ERR_MSG(err, "I2C check fail\n");
-
 	cam_dbg("I2C check success!\n");
+#endif
 
 	err = isx012_check_vendorid(sd);
 	CHECK_ERR_MSG(err, "VendorID check fail\n");
 
 	cam_dbg("VendorID check success!\n");
 
-	msleep_debug(10, false);
 	err = isx012_is_om_changed(sd);
 	CHECK_ERR(err);
 

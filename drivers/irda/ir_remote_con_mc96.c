@@ -357,6 +357,8 @@ static ssize_t remocon_store(struct device *dev, struct device_attribute *attr,
 	unsigned int _data;
 	int count, i;
 
+	data->pdata->irled_ldo_onoff(1);
+
 	for (i = 0; i < MAX_SIZE; i++) {
 		if (sscanf(buf++, "%u", &_data) == 1) {
 			if (_data == 0 || buf == '\0')
@@ -397,6 +399,7 @@ static ssize_t remocon_store(struct device *dev, struct device_attribute *attr,
 	}
 
 	ir_remocon_work(data, data->count);
+	data->pdata->irled_ldo_onoff(0);
 	return size;
 }
 
