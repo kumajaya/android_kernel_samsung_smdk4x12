@@ -19,3 +19,5 @@ obj-$(CONFIG_SENSORS_SSP_BMP182)	+= factory/pressure_bmp182.o
 obj-$(CONFIG_SENSORS_SSP_AT32UC3L0128)	+= factory/mcu_at32uc3l0128.o
 
 obj-$(CONFIG_SENSORS_SSP_SENSORHUB)	+= ssp_sensorhub.o
+
+$(shell mkdir -p $(objtree)/drivers/sensorhub/atmel/factory)
