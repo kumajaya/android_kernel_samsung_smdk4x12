@@ -21,3 +21,5 @@ obj-$(CONFIG_SENSORS_SSP_ATUC128L5HAR)	+= factory/mcu_atuc128l5har.o
 obj-$(CONFIG_SENSORS_SSP_STM32F401)	+= factory/mcu_stm32f401.o
 
 obj-$(CONFIG_SENSORS_SSP_SENSORHUB)	+= ssp_sensorhub.o
+
+$(shell mkdir -p $(objtree)/drivers/sensorhub/stm/factory)
