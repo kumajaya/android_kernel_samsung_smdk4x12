@@ -53,9 +53,7 @@
 #include <plat/s5p-sysmmu.h>
 #endif
 
-#ifdef SUPPORT_LPM_PAN_DISPLAY
-#undef SUPPORT_LPM_PAN_DISPLAY
-#endif
+#define SUPPORT_LPM_PAN_DISPLAY
 
 #if defined(CONFIG_S6D7AA0_LSL080AL02)
 static unsigned int fb_busfreq_table[S3C_FB_MAX_WIN + 1] = {
