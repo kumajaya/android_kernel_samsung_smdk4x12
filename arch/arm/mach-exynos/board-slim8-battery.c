@@ -120,7 +120,7 @@ void check_jig_status(int status)
 
 static bool sec_bat_check_jig_status(void)
 {
-	return (current_cable_type == POWER_SUPPLY_TYPE_UARTOFF);
+	return is_jig_attached == 1 ? true : false;
 }
 
 static bool isInitial = true;
@@ -457,6 +457,20 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.thermal_source = SEC_BATTERY_THERMAL_SOURCE_FG,
 	.temp_check_type = SEC_BATTERY_TEMP_CHECK_TEMP,
 	.temp_check_count = 1,
+#if defined(CONFIG_TARGET_TAB3_WIFI8_KOR)
+	.temp_high_threshold_event = 600,
+	.temp_high_recovery_event = 420,
+	.temp_low_threshold_event = -50,
+	.temp_low_recovery_event = 0,
+	.temp_high_threshold_normal = 600,
+	.temp_high_recovery_normal = 420,
+	.temp_low_threshold_normal = -50,
+	.temp_low_recovery_normal = 0,
+	.temp_high_threshold_lpm = 600,
+	.temp_high_recovery_lpm = 420,
+	.temp_low_threshold_lpm = -50,
+	.temp_low_recovery_lpm = 0,
+#else
 	.temp_high_threshold_event = 500,
 	.temp_high_recovery_event = 420,
 	.temp_low_threshold_event = -50,
@@ -469,7 +483,8 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_high_recovery_lpm = 420,
 	.temp_low_threshold_lpm = -50,
 	.temp_low_recovery_lpm = 0,
-	
+#endif
+
 	.full_check_type = SEC_BATTERY_FULLCHARGED_CHGPSY,
 	.full_check_type_2nd = SEC_BATTERY_FULLCHARGED_TIME,
 

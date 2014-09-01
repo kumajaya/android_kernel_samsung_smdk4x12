@@ -269,10 +269,14 @@ enum sec_battery_temp_check {
   * check cable by interrupt
   */
 #define SEC_BATTERY_CABLE_CHECK_INT			8
+/* SEC_BATTERY_CABLE_CHECK_CHGINT
+  * check cable by charger interrupt
+  */
+#define SEC_BATTERY_CABLE_CHECK_CHGINT			16
 /* SEC_BATTERY_CABLE_CHECK_POLLING
   * check cable by GPIO polling
   */
-#define SEC_BATTERY_CABLE_CHECK_POLLING			16
+#define SEC_BATTERY_CABLE_CHECK_POLLING			32
 
 /* check cable source (can be used overlapped) */
 #define sec_battery_cable_source_t unsigned int

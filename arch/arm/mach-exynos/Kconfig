@@ -1250,6 +1250,10 @@ config TARGET_TAB3_WIFI8
 	bool "TAB3 wifi 8inch common Board"
 	default n
 
+config TARGET_TAB3_WIFI8_KOR
+	bool "TAB3 wifi 8inch common Board(KOR only)"
+	default n
+
 config TARGET_TAB3_LTE8
 	bool "TAB3 lte 8inch common Board"
 	default n

@@ -1013,20 +1013,19 @@ static bool sec_bat_check_fullcharged_condition(
 		full_check_type = battery->pdata->full_check_type_2nd;
 
 	switch (full_check_type) {
-		case SEC_BATTERY_FULLCHARGED_CHGINT:
-			return false;
-		case SEC_BATTERY_FULLCHARGED_ADC:
-		case SEC_BATTERY_FULLCHARGED_FG_CURRENT:
-		case SEC_BATTERY_FULLCHARGED_TIME:
-		case SEC_BATTERY_FULLCHARGED_SOC:
-		case SEC_BATTERY_FULLCHARGED_CHGGPIO:
-		case SEC_BATTERY_FULLCHARGED_CHGPSY:
-			break;
+	case SEC_BATTERY_FULLCHARGED_ADC:
+	case SEC_BATTERY_FULLCHARGED_FG_CURRENT:
+	case SEC_BATTERY_FULLCHARGED_SOC:
+	case SEC_BATTERY_FULLCHARGED_CHGGPIO:
+	case SEC_BATTERY_FULLCHARGED_CHGPSY:
+		break;
 
-		/* If these is NOT full check type or NONE full check type,
-	 	 * it is full-charged
-	 	*/
-		case SEC_BATTERY_FULLCHARGED_NONE:
+	/* If these is NOT full check type or NONE full check type,
+	 * it is full-charged
+	 */
+	case SEC_BATTERY_FULLCHARGED_CHGINT:
+	case SEC_BATTERY_FULLCHARGED_TIME:
+	case SEC_BATTERY_FULLCHARGED_NONE:
 	default:
 		return true;
 		break;
@@ -1112,6 +1111,7 @@ static void sec_bat_do_test_function(
 						POWER_SUPPLY_PROP_STATUS, value);
 				battery->status = value.intval;
 			}
+			break;
 		default:
 			pr_info("%s: error test: unknown state\n", __func__);
 			break;
@@ -1355,6 +1355,7 @@ static bool sec_bat_check_fullcharged(
 		gpio_free(battery->pdata->chg_gpio_full_check);
 		break;
 
+	case SEC_BATTERY_FULLCHARGED_CHGINT:
 	case SEC_BATTERY_FULLCHARGED_CHGPSY:
 		psy_do_property("sec-charger", get,
 			POWER_SUPPLY_PROP_STATUS, value);

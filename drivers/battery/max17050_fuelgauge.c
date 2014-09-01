@@ -685,6 +685,40 @@ static void fg_periodic_read(struct i2c_client *client)
 	if (!str)
 		return;
 
+#if defined(CONFIG_MACH_TAB3)
+	if ((fg_read_register(client, 0x42) != 0x1005) || (fg_read_register(client, 0x32) != 0x1485) || \
+		(fg_read_register(client, 0x22) != 0x1F83) || (fg_read_register(client, 0x12) != 0x4803))    
+	{
+		if((fg_read_register(client, 0x12) != 0x4803)) {
+
+			if (fg_write_register(client, 0x12, (u16)0x4803) < 0) {
+				dev_err(&client->dev, "%s: Failed to write QRtable0 \n",
+					__func__);
+					}
+		}
+		if((fg_read_register(client, 0x22) != 0x1F83)) {
+
+			if (fg_write_register(client, 0x22, (u16)0x1F83) < 0) {
+				dev_err(&client->dev, "%s: Failed to write QRtable10 \n",
+					__func__);
+					}
+		}
+		if((fg_read_register(client, 0x32) != 0x1485)) {
+
+			if (fg_write_register(client, 0x32, (u16)0x1485) < 0) {
+				dev_err(&client->dev, "%s: Failed to write QRtable20 \n",
+					__func__);
+					}
+		}
+		if((fg_read_register(client, 0x42) != 0x1005)) {
+
+			if (fg_write_register(client, 0x42, (u16)0x1005) < 0) {
+				dev_err(&client->dev, "%s: Failed to write QRtable30 \n",
+					__func__);
+					}
+		}
+	}
+#endif
 	for (i = 0; i < 16; i++) {
 		for (reg = 0; reg < 0x10; reg++)
 			data[reg] = fg_read_register(client, reg + i * 0x10);
@@ -834,6 +868,19 @@ static int fg_check_battery_present(struct i2c_client *client)
 	return ret;
 }
 
+static int fg_write_temp(struct i2c_client *client, int temperature)
+{
+	u8 data[2];
+
+	data[0] = 0;
+	data[1] = temperature;
+	fg_i2c_write(client, TEMPERATURE_REG, data, 2);
+
+	dev_dbg(&client->dev, "%s: temperature to (%d)\n",
+		__func__, temperature);
+
+	return temperature;
+}
 
 static int fg_read_temp(struct i2c_client *client)
 {
@@ -2036,7 +2083,8 @@ static int get_fuelgauge_soc(struct i2c_client *client)
 
 	/*  Checks vcell level and tries to compensate SOC if needed.*/
 	/*  If jig cable is connected, then skip low batt compensation check. */
-	if (!fuelgauge->pdata->check_jig_status() &&
+	if (fuelgauge->pdata->check_jig_status &&
+		!fuelgauge->pdata->check_jig_status() &&
 		value.intval == POWER_SUPPLY_STATUS_DISCHARGING)
 		fg_soc = low_batt_compensation(
 			client, fg_soc, fg_vcell, fg_current);
@@ -2098,6 +2146,7 @@ bool sec_hal_fg_init(struct i2c_client *client)
 				i2c_get_clientdata(client);
 	ktime_t	current_time;
 	struct timespec ts;
+	u8 data[2];
 
 	current_time = alarm_get_elapsed_realtime();
 	ts = ktime_to_timespec(current_time);
@@ -2142,6 +2191,13 @@ bool sec_hal_fg_init(struct i2c_client *client)
 	INIT_DELAYED_WORK(&fuelgauge->info.full_comp_work,
 		full_comp_work_handler);
 
+	/* NOT using FG for temperature */
+	if (fuelgauge->pdata->thermal_source != SEC_BATTERY_THERMAL_SOURCE_FG) {
+		data[0] = 0x00;
+		data[1] = 0x21;
+		fg_i2c_write(client, CONFIG_REG, data, 2);
+	}
+
 	return true;
 }
 
@@ -2179,6 +2235,10 @@ bool sec_hal_fg_fuelalert_process(void *irq_data, bool is_fuel_alerted)
 	int overcurrent_limit_in_soc;
 	int current_soc =
 		get_fuelgauge_value(fuelgauge->client, FG_LEVEL);
+	int current_vcell =
+		get_fuelgauge_value(fuelgauge->client, FG_VOLTAGE);
+	int read_val;
+	int new_soc;
 
 	if (fuelgauge->info.soc <= STABLE_LOW_BATTERY_DIFF)
 		overcurrent_limit_in_soc = STABLE_LOW_BATTERY_DIFF_LOWBATT;
@@ -2206,12 +2266,25 @@ bool sec_hal_fg_fuelalert_process(void *irq_data, bool is_fuel_alerted)
 
 	if (value.intval ==
 			POWER_SUPPLY_STATUS_DISCHARGING) {
-		dev_err(&fuelgauge->client->dev,
-			"Set battery level as 0, power off.\n");
-		fuelgauge->info.soc = 0;
-		value.intval = 0;
-		psy_do_property("battery", set,
-			POWER_SUPPLY_PROP_CAPACITY, value);
+
+		if (current_vcell >= POWER_OFF_VOLTAGE_HIGH_MARGIN) {
+			read_val = fg_read_register(fuelgauge->client, FULLCAP_REG);
+			/* FullCAP * 0.013 */
+			fg_write_register(fuelgauge->client, REMCAP_REP_REG,
+			(u16)(read_val * 13 / 1000));
+			msleep(200);
+			new_soc = fg_read_soc(fuelgauge->client);
+			dev_info(&fuelgauge->client->dev, "%s soc(%d => %d), vcell=%d\n",
+				__func__, current_soc, new_soc, current_vcell);
+		} else {
+			dev_err(&fuelgauge->client->dev,
+				"Set battery level as 0, power off.\n");
+			fuelgauge->info.soc = 0;
+			value.intval = 0;
+			psy_do_property("battery", set,
+				POWER_SUPPLY_PROP_CAPACITY, value);
+		}
+
 	}
 
 	return true;
@@ -2353,6 +2426,7 @@ bool sec_hal_fg_set_property(struct i2c_client *client,
 	case POWER_SUPPLY_PROP_TEMP:
 		/* Target Temperature */
 	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
+		fg_write_temp(client, val->intval);
 		break;
 	default:
 		return false;
