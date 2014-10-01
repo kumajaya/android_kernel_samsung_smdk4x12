@@ -313,19 +313,22 @@ static void ir_remocon_work(struct ir_remocon_data *ir_data, int count)
 	}
 */
 	data->count = 2;
-#if 0
+#if !defined(CONFIG_MACH_TAB3)
 	end_data = data->signal[count-2] << 8 | data->signal[count-1];
 	emission_time = \
 		(1000 * (data->ir_sum - end_data) / (data->ir_freq)) + 10;
 	sleep_timing = emission_time - 130;
 	if (sleep_timing > 0)
 		msleep(sleep_timing);
-#endif
 /*
 	printk(KERN_INFO "%s: sleep_timing = %d\n", __func__, sleep_timing);
 */
 	emission_time = \
+		(1000 * (data->ir_sum) / (data->ir_freq)) + 50;
+#else
+	emission_time = \
 		(1000 * (data->ir_sum) / (data->ir_freq));
+#endif
 	if (emission_time > 0)
 		msleep(emission_time);
 		printk(KERN_INFO "%s: emission_time = %d\n",
@@ -358,7 +361,9 @@ static ssize_t remocon_store(struct device *dev, struct device_attribute *attr,
 	unsigned int _data;
 	int count, i;
 
+#if defined(CONFIG_MACH_TAB3)
 	data->pdata->irled_ldo_onoff(1);
+#endif
 
 	for (i = 0; i < MAX_SIZE; i++) {
 		if (sscanf(buf++, "%u", &_data) == 1) {
@@ -400,7 +405,9 @@ static ssize_t remocon_store(struct device *dev, struct device_attribute *attr,
 	}
 
 	ir_remocon_work(data, data->count);
+#if defined(CONFIG_MACH_TAB3)
 	data->pdata->irled_ldo_onoff(0);
+#endif
 	return size;
 }
 
